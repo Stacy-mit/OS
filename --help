@@ -1,0 +1,2 @@
+[CHILD] getpid() = 3268, getppid()= 3267
+[PARENT] getpid() = 3267, getppid()= 2215
