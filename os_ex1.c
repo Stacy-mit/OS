@@ -15,7 +15,16 @@ int main(int argc, char *argv[]){
         exit(1);
     }
     static char args_doc[] = "filename";
-
+     
+    if(argv[1]=='-' 
+    && argv[2]=='-' 
+    && argv[3]=='h' 
+    && argv[4]=='e' 
+    && argv[5]=='l' 
+    && argv[6]=='p'){
+        fprintf(stdout, "Usage: ./a.out filename\n");
+        exit(0);
+    }
 
     /*
     The options, parser, and
