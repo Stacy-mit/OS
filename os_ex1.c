@@ -62,6 +62,7 @@ int main(int argc, char *argv[]){
 
     if (child<0){
         fprintf(stderr,"Error while forking!\n");
+        close(fd);
         exit(1);
     }
 
@@ -74,6 +75,7 @@ int main(int argc, char *argv[]){
         int wr = write(fd,msg,strlen(msg)); 
         if(wr<0){
             fprintf(stderr,"error while writing!\n");
+            close(fd);
             exit(1);
         }
         exit(0);
@@ -84,6 +86,7 @@ int main(int argc, char *argv[]){
         int wt = wait(&status);
         if(wt < 0){
             perror("Error while waiting!\n");
+            close(fd);
             exit(1);
         }
         pid_t mypid = getpid();
@@ -92,9 +95,11 @@ int main(int argc, char *argv[]){
         sprintf(msg,"[PARENT] getpid() = %d, getppid()= %d\n",mypid,ppid);
         int wr = write(fd,msg,strlen(msg)); 
         if(wr<0){
+            close(fd);
             sprintf(stderr,"error while writing!\n");
             exit(1);
         }
+        close(fd);
         exit(0);
     }
 
