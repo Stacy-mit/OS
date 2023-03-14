@@ -85,7 +85,7 @@ int main(int argc, char *argv[]){
         char msg[100];
         sprintf(msg,"[PARENT] getpid() = %d, getppid()= %d\n",mypid,ppid);
         int wr = write(fd,msg,strlen(msg)); 
-        if(wr<0){
+        if(wr<strlen(buf)){
             close(fd);
             fprintf(stderr,"error while writing!\n");
             exit(1);
