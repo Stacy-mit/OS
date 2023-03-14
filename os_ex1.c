@@ -15,16 +15,6 @@ int main(int argc, char *argv[]){
         exit(1);
     }
     static char args_doc[] = "filename";
-     
-    if(argv[1][0]=='-' 
-    && argv[1][1]=='-' 
-    && argv[1][2]=='h' 
-    && argv[1][3]=='e' 
-    && argv[1][4]=='l' 
-    && argv[1][5]=='p'){
-        fprintf(stdout, "Usage: ./a.out filename\n");
-        exit(0);
-    }
 
 
     /*
@@ -78,6 +68,7 @@ int main(int argc, char *argv[]){
             close(fd);
             exit(1);
         }
+        close(fd);
         exit(0);
 
     }
@@ -96,7 +87,7 @@ int main(int argc, char *argv[]){
         int wr = write(fd,msg,strlen(msg)); 
         if(wr<0){
             close(fd);
-            sprintf(stderr,"error while writing!\n");
+            fprintf(stderr,"error while writing!\n");
             exit(1);
         }
         close(fd);
