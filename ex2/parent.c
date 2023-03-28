@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -12,9 +13,36 @@ int* state;
 char* str_state;
 
 //array for pid of children
-int* children;
+pid_t* children;
 //len of argv[1] aka number of children
 int len;
+
+int search_index(int children[], pid_t waitpid){
+    for(int i=0;i<len;i++){
+        if(children[i]==waitpid)
+            return i;
+    }
+    return 0;
+}
+
+void child_code(int i, pid_t pid){
+    if(pid<0){
+            fprintf(stderr,"Error while forking!\n");
+            exit(1);
+        }
+        //child code
+    else if(!pid){
+            //needed char* to pass to argv
+            char arg[1];
+            arg[0]=str_state[i];
+            char *const argv[] = {"./child",arg,NULL};
+            int status = execv("./child",argv);
+        }
+    else {
+            fprintf(stdout,"[PARENT/PID=%d] Created child %d (PID=%d) and initial state %c\n",getpid(),i,children[i],str_state[i]);
+        }
+
+}
 
 void sigusr1_handler(int signum){
     for(int i=0;i<len;i++){
@@ -23,6 +51,8 @@ void sigusr1_handler(int signum){
 }
 
 void sigusr2_handler(int signum){
+    printf("ok");
+
     for(int i=0;i<len;i++){
         kill(children[i],SIGUSR2);
     }
@@ -46,6 +76,7 @@ void sigterm_handler(int signum){
     fprintf(stdout, "All children exited, terminating as well\n");
 
 }
+
 
 int initialize(char argv[], int len){
     state = (int*)malloc(len*sizeof(int));
@@ -81,6 +112,7 @@ int initialize(char argv[], int len){
     return 0;
 }
 
+
 int main(int argc, char* argv[]){
     if(argc!=2){
         fprintf(stderr,"Wrong number of arguments\nInput example: ./gates ttff!\n");
@@ -96,10 +128,11 @@ int main(int argc, char* argv[]){
         fprintf(stderr,"Failed to allocate memory for children array!\n");
         exit(1);
     }
-    //SIGUSR1
-    struct sigaction usr1_action,usr2_action,sigterm_action;
-    sigset_t sigset_usr1, sigset_usr2, sigset_term;
+    struct sigaction usr1_action,usr2_action,sigterm_action,sigchld_action;
+    sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_chld;
     /* Set up the structure to specify the new action. */
+    
+    //SIGUSR1
     usr1_action.sa_handler = sigusr1_handler;
     sigemptyset(&sigset_usr1);
     sigaddset(&sigset_usr1, SIGUSR2);
@@ -109,16 +142,19 @@ int main(int argc, char* argv[]){
      If you specify the SA_RESTART flag, return from that handler will resume a primitive;
     otherwise, return from that handler will cause EINTR. */
     usr1_action.sa_flags = SA_RESTART;
+    //SIGUSR2
     usr2_action.sa_handler = sigusr2_handler;
     sigemptyset(&sigset_usr2);
     sigaddset(&sigset_usr2, SIGUSR1);
     sigaddset(&sigset_usr2, SIGTERM);
     usr2_action.sa_mask = sigset_usr2;
+    //SIGTERM
     sigterm_action.sa_handler = sigterm_handler;
     sigemptyset(&sigset_term);
     sigaddset(&sigset_term, SIGUSR1);
     sigaddset(&sigset_term, SIGUSR2);
     sigterm_action.sa_mask = sigset_term;
+
     if (0 != sigaction(SIGUSR1, &usr1_action, NULL)){
         perror("sigaction () failed installing SIGUSR1 handler");
         exit(1);
@@ -135,24 +171,38 @@ int main(int argc, char* argv[]){
     int curr_pid;
     for(int i=0;i<len;i++){
         children[i]=fork();
-        if(children[i]<0){
-            fprintf(stderr,"Error while forking!\n");
+        child_code(i,children[i]);
+    }
+    pid_t wait_pid;
+    int status;
+    /* WNOHANG: return immediately if no child has exited.
+    ------------------------------------------------------
+    WUNTRACED : also return if a child has stopped. 
+    Status for traced children which have stopped is provided even if this option is not specified.
+    */
+    while(1){
+        wait_pid = waitpid(-1,&status,WUNTRACED);
+        if(wait_pid<=0){
+            fprintf(stderr, "Error while waiting!\n");
             exit(1);
         }
-        //child code
-        if(children[i]==0){
-            //needed char* to pass to argv
-            char arg[1];
-            arg[0]=str_state[i];
-            char *const argv[] = {"./child",arg,NULL};
-            int status = execv("./child",argv);
+        printf("Child with pid=%d terminated\n",wait_pid);
+        //child terminated normally so parent needs to resurrect it
+        if(WIFEXITED(status) || WIFSIGNALED(status)){
+            //find index of child terminated
+            int id = search_index(children, wait_pid);
+            if(!id){
+                fprintf(stderr,"Could not find pid, something went wrong!\n");
+                exit(1);
+            }
+            pid_t newchild = fork();
+            children[id] = newchild;
+            child_code(id,newchild);
         }
-        else {
-            fprintf(stdout,"[PARENT/PID=%d] Created child %d (PID=%d) and initial state %c\n",getpid(),i,children[i],str_state[i]);
-
+        if(WIFSTOPPED(status)){
+            kill(wait_pid,SIGCONT);
         }
     }
-    waitpid(-1, NULL,0);
     
 
     
