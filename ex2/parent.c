@@ -19,7 +19,7 @@ int len;
 
 int total_sec;
 
-//setting up the alarm code !!!NEED TO CALL IT IN THE MAIN CODE!!! (alarm(15) in the child code)
+//setting up the alarm code !!!NEED TO CHECK THE POSITION OF alarm(15) in the code-- line 192!!!)
 void alarm_handler (int s){
     for (int i=0;i<len;i++){
         total_sec = s;
@@ -189,6 +189,7 @@ int main(int argc, char* argv[]){
     int curr_pid;
     for(int i=0;i<len;i++){
         children[i]=fork();
+        alarm(15);
         child_code(i,children[i]);
     }
     pid_t wait_pid;

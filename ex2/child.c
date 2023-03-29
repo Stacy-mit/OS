@@ -9,14 +9,26 @@
 
 int status;
 int total_sec;
+
+//setting up the alarm function
 void alarm_handler (int s){
     total_sec = s;
-};//setting up the alarm function
+};
 
+//setting up sigusr1 function !!the gate parameter needs to be changed!!
 void usr1_handler (int signum){
-    if (status == 0 ) status = 1;
-    else if (status == 1) status = 0;
-    else fprintf(stderr, "Error! Failed to flip the gate state!\n");  
+    if (status == 0) {
+        status = 1;
+        fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are closed!\n",i,argv[1],total_sec);
+    }
+    else if (status == 1) {
+        status = 0;
+        fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are open!\n",i,argv[1],total_sec);
+    }
+    else {
+        fprintf(stderr, "Error! Failed to flip the gate's state!\n");
+        exit(1);
+    }  
 }
 
 void usr2_handler (int signum){
