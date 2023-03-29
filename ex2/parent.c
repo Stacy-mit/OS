@@ -17,14 +17,19 @@ pid_t* children;
 //len of argv[1] aka number of children
 int len;
 
+int total_sec;
+
 //setting up the alarm code !!!NEED TO CALL IT IN THE MAIN CODE!!! (alarm(15) in the child code)
 void alarm_handler (int s){
     for (int i=0;i<len;i++){
-        if (status == 0 ) fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are open!\n",i,childern[i],s);
-        else if (status == 1) fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are closed!\n",i,childern[i],s);
-        else fprintf(stderr, "Error while printing the gate status!\n");    
+        total_sec = s;
+        if (state == 0 ) fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are open!\n",i,children[i],total_sec);
+        else if (state == 1) fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are closed!\n",i,children[i],total_sec);
+        else{
+            fprintf(stderr, "Error while printing the gate status!\n");
+            exit(1);
+        }    
     }
-    return 0; //??
 }
 
 int search_index(int children[], pid_t waitpid){

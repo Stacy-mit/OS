@@ -8,10 +8,10 @@
 #include <signal.h>
 
 int status;
-
+int total_sec;
 void alarm_handler (int s){
-
-}
+    total_sec = s;
+};//setting up the alarm function
 
 void usr1_handler (int signum){
     if (status == 0 ) status = 1;
@@ -20,9 +20,10 @@ void usr1_handler (int signum){
 }
 
 void usr2_handler (int signum){
+    alarm(1);
     if (status == 0 || status == 1) {
-        fprintf(stdout, "%d, %d\n",status, s);
-    };
+        fprintf(stdout, "%d, %d\n",status, total_sec);
+    }
     else fprintf(stderr, "Error! Not valid gate state!\n");
 }
 
@@ -35,7 +36,7 @@ int main(int argc, char* argv[]){
     struct sigaction usr1_action,usr2_action,sigterm_action;
     sigset_t sigset_usr1, sigset_usr2, sigset_term;
     /* Set up the structure to specify the new action. */
-    //usr1_action.sa_handler = sigusr1_handler;
+    usr1_action.sa_handler = usr1_handler;
     sigemptyset(&sigset_usr1);
     sigaddset(&sigset_usr1, SIGUSR2);
     sigaddset(&sigset_usr1, SIGTERM);
@@ -43,7 +44,7 @@ int main(int argc, char* argv[]){
      If you specify the SA_RESTART flag, return from that handler will resume a primitive;
     otherwise, return from that handler will cause EINTR. */
     usr1_action.sa_flags = SA_RESTART;
-    //usr2_action.sa_handler = sigusr2_handler;
+    usr2_action.sa_handler = usr2_handler;
     sigemptyset(&sigset_usr2);
     sigaddset(&sigset_usr2, SIGUSR1);
     sigaddset(&sigset_usr2, SIGTERM);
