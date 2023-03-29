@@ -15,7 +15,7 @@ void alarm_handler (int s){
     total_sec = s;
 };
 
-//setting up sigusr1 function !!the gate parameter needs to be changed!!
+//setting up sigusr1 function !!the parameters need to be changed!!
 void usr1_handler (int signum){
     if (status == 0) {
         status = 1;
@@ -34,7 +34,7 @@ void usr1_handler (int signum){
 void usr2_handler (int signum){
     alarm(1);
     if (status == 0 || status == 1) {
-        fprintf(stdout, "%d, %d\n",status, total_sec);
+        fprintf(stdout, "state: %d, %d seconds\n",status, total_sec);
     }
     else fprintf(stderr, "Error! Not valid gate state!\n");
 }
