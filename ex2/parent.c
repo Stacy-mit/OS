@@ -17,20 +17,6 @@ pid_t* children;
 //len of argv[1] aka number of children
 int len;
 
-int total_sec;
-
-//setting up the alarm code !!!NEED TO CHECK THE POSITION OF alarm(15) in the code-- line 192!!!)
-void alarm_handler (int s){
-    for (int i=0;i<len;i++){
-        total_sec = s;
-        if (state == 0 ) fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are open!\n",i,children[i],total_sec);
-        else if (state == 1) fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are closed!\n",i,children[i],total_sec);
-        else{
-            fprintf(stderr, "Error while printing the gate status!\n");
-            exit(1);
-        }    
-    }
-}
 
 int search_index(int children[], pid_t waitpid){
     for(int i=0;i<len;i++){
@@ -48,8 +34,9 @@ void child_code(int i, pid_t pid){
         //child code
     else if(!pid){
             //needed char* to pass to argv
-            char arg[1];
+            char arg[2];
             arg[0]=str_state[i];
+            arg[1]=i;
             char *const argv[] = {"./child",arg,NULL};
             int status = execv("./child",argv);
         }
@@ -130,8 +117,6 @@ int initialize(char argv[], int len){
 
 int main(int argc, char* argv[]){
 
-    //signal(SIGALRM, alarm_handler); //set up the alarm handler
-
     if(argc!=2){
         fprintf(stderr,"Wrong number of arguments\nInput example: ./gates ttff!\n");
         exit(1);
@@ -146,8 +131,8 @@ int main(int argc, char* argv[]){
         fprintf(stderr,"Failed to allocate memory for children array!\n");
         exit(1);
     }
-    struct sigaction usr1_action,usr2_action,sigterm_action,sigchld_action, alarm_action;
-    sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_chld, sigset_alarm;
+    struct sigaction usr1_action,usr2_action,sigterm_action,sigchld_action;
+    sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_chld;
     /* Set up the structure to specify the new action. */
     
     //SIGUSR1
@@ -155,7 +140,6 @@ int main(int argc, char* argv[]){
     sigemptyset(&sigset_usr1);
     sigaddset(&sigset_usr1, SIGUSR2);
     sigaddset(&sigset_usr1, SIGTERM);
-    sigaddset(&sigset_usr1, SIGALRM);
     usr1_action.sa_mask = sigset_usr1;
     /*If you use sigaction to establish a signal handler, you can specify how that handler should behave.
      If you specify the SA_RESTART flag, return from that handler will resume a primitive;
@@ -166,21 +150,13 @@ int main(int argc, char* argv[]){
     sigemptyset(&sigset_usr2);
     sigaddset(&sigset_usr2, SIGUSR1);
     sigaddset(&sigset_usr2, SIGTERM);
-    sigaddset(&sigset_usr2, SIGALRM);
     usr2_action.sa_mask = sigset_usr2;
     //SIGTERM
     sigterm_action.sa_handler = sigterm_handler;
     sigemptyset(&sigset_term);
     sigaddset(&sigset_term, SIGUSR1);
     sigaddset(&sigset_term, SIGUSR2);
-    sigaddset(&sigset_term, SIGALRM);
     sigterm_action.sa_mask = sigset_term;
-    alarm_action.sa_handler=alarm_handler;
-    alarm_action.sa_flags=0; //no special flags are set for the alarm
-    sigemptyset(&sigset_alarm);
-    sigaddset(&sigset_alarm, SIGUSR1);
-    sigaddset(&sigset_alarm, SIGUSR2);
-    sigaddset(&sigset_alarm, SIGTERM); 
 
     if (0 != sigaction(SIGUSR1, &usr1_action, NULL)){
         perror("sigaction () failed installing SIGUSR1 handler");
@@ -194,15 +170,11 @@ int main(int argc, char* argv[]){
         perror("sigaction () failed installing SIGTERM handler");
         exit(1);
     }
-    if (0 != sigaction(SIGALRM, &alarm_action, NULL)){
-        perror("sigaction () failed installing SIGALRM handler");
-        exit(1);
-    }
+    
 
     int curr_pid;
     for(int i=0;i<len;i++){
         children[i]=fork();
-        alarm(15);
         child_code(i,children[i]);
     }
     pid_t wait_pid;

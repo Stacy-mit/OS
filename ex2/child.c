@@ -8,22 +8,32 @@
 #include <signal.h>
 
 int status;
-int total_sec;
+int total_sec=0;
+char* gate_num;
 
 //setting up the alarm function
 void alarm_handler (int s){
-    total_sec = s;
+    if (s=SIGALRM){
+        total_sec++;
+        alarm(1);
+    }
+    if (status == 0 ) fprintf(stdout, "[GATE=%s/PID=%d/TIME=%d]The gates are open!\n",gate_num,getpid(),total_sec);
+    else if (status == 1) fprintf(stdout, "[GATE=%s/PID=%d/TIME=%d]The gates are closed!\n",gate_num,getpid(),total_sec);
+    else{
+        fprintf(stderr, "Error while printing the gate status!\n");
+        exit(1);
+    }    
 };
 
 //setting up sigusr1 function !!the parameters need to be changed!!
 void usr1_handler (int signum){
     if (status == 0) {
         status = 1;
-        fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are closed!\n",i,argv[1],total_sec);
+        fprintf(stdout, "[GATE=%s/PID=%d/TIME=%d]The gates are closed!\n",gate_num,getpid(),total_sec);
     }
     else if (status == 1) {
         status = 0;
-        fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are open!\n",i,argv[1],total_sec);
+        fprintf(stdout, "[GATE=%s/PID=%d/TIME=%d]The gates are open!\n",gate_num,getpid(),total_sec);
     }
     else {
         fprintf(stderr, "Error! Failed to flip the gate's state!\n");
@@ -41,9 +51,10 @@ void usr2_handler (int signum){
 
 int main(int argc, char* argv[]){
 
-    //signal(SIGALRM, alarm_handler); //set up the alarm handler
-
+    alarm(15);
+    
     fprintf(stdout,"%s\n",argv[1]);
+    gate_num=argv[2];
     //SIGUSR1
     struct sigaction usr1_action,usr2_action,sigterm_action, alarm_action;
     sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_alarm;
@@ -69,6 +80,11 @@ int main(int argc, char* argv[]){
     sigaddset(&sigset_alarm, SIGUSR1);
     sigaddset(&sigset_alarm, SIGUSR2);
     sigaddset(&sigset_alarm, SIGTERM); 
+
+    if (0 != sigaction(SIGALRM, &alarm_action, NULL)){
+        perror("sigaction () failed installing SIGALRM handler");
+        exit(1);
+    }
     
     while(1);
 
