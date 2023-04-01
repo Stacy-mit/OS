@@ -130,7 +130,7 @@ int initialize(char argv[], int len){
 
 int main(int argc, char* argv[]){
 
-    signal(SIGALRM, alarm_handler); //set up the alarm handler
+    //signal(SIGALRM, alarm_handler); //set up the alarm handler
 
     if(argc!=2){
         fprintf(stderr,"Wrong number of arguments\nInput example: ./gates ttff!\n");
@@ -146,8 +146,8 @@ int main(int argc, char* argv[]){
         fprintf(stderr,"Failed to allocate memory for children array!\n");
         exit(1);
     }
-    struct sigaction usr1_action,usr2_action,sigterm_action,sigchld_action;
-    sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_chld;
+    struct sigaction usr1_action,usr2_action,sigterm_action,sigchld_action, alarm_action;
+    sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_chld, sigset_alarm;
     /* Set up the structure to specify the new action. */
     
     //SIGUSR1
@@ -155,6 +155,7 @@ int main(int argc, char* argv[]){
     sigemptyset(&sigset_usr1);
     sigaddset(&sigset_usr1, SIGUSR2);
     sigaddset(&sigset_usr1, SIGTERM);
+    sigaddset(&sigset_usr1, SIGALRM);
     usr1_action.sa_mask = sigset_usr1;
     /*If you use sigaction to establish a signal handler, you can specify how that handler should behave.
      If you specify the SA_RESTART flag, return from that handler will resume a primitive;
@@ -165,13 +166,21 @@ int main(int argc, char* argv[]){
     sigemptyset(&sigset_usr2);
     sigaddset(&sigset_usr2, SIGUSR1);
     sigaddset(&sigset_usr2, SIGTERM);
+    sigaddset(&sigset_usr2, SIGALRM);
     usr2_action.sa_mask = sigset_usr2;
     //SIGTERM
     sigterm_action.sa_handler = sigterm_handler;
     sigemptyset(&sigset_term);
     sigaddset(&sigset_term, SIGUSR1);
     sigaddset(&sigset_term, SIGUSR2);
+    sigaddset(&sigset_term, SIGALRM);
     sigterm_action.sa_mask = sigset_term;
+    alarm_action.sa_handler=alarm_handler;
+    alarm_action.sa_flags=0; //no special flags are set for the alarm
+    sigemptyset(&sigset_alarm);
+    sigaddset(&sigset_alarm, SIGUSR1);
+    sigaddset(&sigset_alarm, SIGUSR2);
+    sigaddset(&sigset_alarm, SIGTERM); 
 
     if (0 != sigaction(SIGUSR1, &usr1_action, NULL)){
         perror("sigaction () failed installing SIGUSR1 handler");
@@ -183,6 +192,10 @@ int main(int argc, char* argv[]){
     }
     if (0 != sigaction(SIGTERM, &sigterm_action, NULL)){
         perror("sigaction () failed installing SIGTERM handler");
+        exit(1);
+    }
+    if (0 != sigaction(SIGALRM, &alarm_action, NULL)){
+        perror("sigaction () failed installing SIGALRM handler");
         exit(1);
     }
 
