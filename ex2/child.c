@@ -42,7 +42,6 @@ void usr1_handler (int signum){
 }
 
 void usr2_handler (int signum){
-    alarm(1);
     if (status == 0 || status == 1) {
         fprintf(stdout, "state: %d, %d seconds\n",status, total_sec);
     }
