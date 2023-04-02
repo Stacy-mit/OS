@@ -6,34 +6,40 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
+#include <math.h>
 
-int status;
-int total_sec=0;
-char* gate_num;
+int state;
+time_t begin,total_sec;
+
 
 //setting up the alarm function
 void alarm_handler (int s){
-    if (s=SIGALRM){
-        total_sec++;
-        alarm(1);
-    }
-    if (status == 0 ) fprintf(stdout, "[GATE=%s/PID=%d/TIME=%d]The gates are open!\n",gate_num,getpid(),total_sec);
-    else if (status == 1) fprintf(stdout, "[GATE=%s/PID=%d/TIME=%d]The gates are closed!\n",gate_num,getpid(),total_sec);
+    // if (s=SIGALRM){
+    //     total_sec++;
+    //     alarm(1);
+    // }
+    total_sec = time(NULL)-begin;
+    if (state == 0 ) fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are open!\n",state,getpid(),total_sec);
+
+    else if (state == 1) fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are closed!\n",state,getpid(),total_sec);
     else{
-        fprintf(stderr, "Error while printing the gate status!\n");
+        fprintf(stderr, "Error while printing the gate state!\n");
         exit(1);
-    }    
+    }
+    alarm(15);    
 };
 
 //setting up sigusr1 function !!the parameters need to be changed!!
 void usr1_handler (int signum){
-    if (status == 0) {
-        status = 1;
-        fprintf(stdout, "[GATE=%s/PID=%d/TIME=%d]The gates are closed!\n",gate_num,getpid(),total_sec);
+    total_sec = time(NULL)-begin;
+    if (state == 0) {
+        state = 1;
+        fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are closed!\n",state,getpid(),total_sec);
     }
-    else if (status == 1) {
-        status = 0;
-        fprintf(stdout, "[GATE=%s/PID=%d/TIME=%d]The gates are open!\n",gate_num,getpid(),total_sec);
+    else if (state == 1) {
+        state = 0;
+        fprintf(stdout, "[GATE=%d/PID=%d/TIME=%d]The gates are open!\n",state,getpid(),total_sec);
     }
     else {
         fprintf(stderr, "Error! Failed to flip the gate's state!\n");
@@ -42,18 +48,21 @@ void usr1_handler (int signum){
 }
 
 void usr2_handler (int signum){
-    if (status == 0 || status == 1) {
-        fprintf(stdout, "state: %d, %d seconds\n",status, total_sec);
+    total_sec = time(NULL)-begin;
+
+    if (state == 0 || state == 1) {
+        fprintf(stdout, "Child with pid: %d, state: %d, %d seconds\n",getpid(),state, total_sec);
     }
     else fprintf(stderr, "Error! Not valid gate state!\n");
 }
 
 int main(int argc, char* argv[]){
-
-    alarm(15);
-    
-    fprintf(stdout,"%s\n",argv[1]);
-    gate_num=argv[2];
+    begin = time(NULL);
+    char str_state = argv[1][0];
+    if(str_state=='t')
+        state=0;
+    else if(str_state=='f')
+        state=1;
     //SIGUSR1
     struct sigaction usr1_action,usr2_action,sigterm_action, alarm_action;
     sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_alarm;
@@ -84,6 +93,19 @@ int main(int argc, char* argv[]){
         perror("sigaction () failed installing SIGALRM handler");
         exit(1);
     }
+     if (0 != sigaction(SIGUSR1, &usr1_action, NULL)){
+        perror("sigaction () failed installing SIGUSR1 handler");
+        exit(1);
+    }
+    if (0 != sigaction(SIGUSR2, &usr2_action, NULL)){
+        perror("sigaction () failed installing SIGUSR2 handler");
+        exit(1);
+    }
+    if (0 != sigaction(SIGTERM, &sigterm_action, NULL)){
+        perror("sigaction () failed installing SIGTERM handler");
+        exit(1);
+    }
+    kill(getpid(),SIGALRM);
     
     while(1);
 

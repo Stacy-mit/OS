@@ -34,9 +34,8 @@ void child_code(int i, pid_t pid){
         //child code
     else if(!pid){
             //needed char* to pass to argv
-            char arg[2];
+            char arg[1];
             arg[0]=str_state[i];
-            arg[1]=i;
             char *const argv[] = {"./child",arg,NULL};
             int status = execv("./child",argv);
         }
@@ -53,8 +52,6 @@ void sigusr1_handler(int signum){
 }
 
 void sigusr2_handler(int signum){
-    printf("ok");
-
     for(int i=0;i<len;i++){
         kill(children[i],SIGUSR2);
     }
@@ -67,15 +64,18 @@ void sigterm_handler(int signum){
     //wait for all children
     int status;
     pid_t curr;
-    for(int i=0;i<len;i++){
+    int i=0;
+    while(i<len){
         fprintf(stdout,"Waiting for %d children to exit\n",len-i);
-        curr=waitpid(children[i],&status,0);
+        curr=waitpid(-1,&status,0);
         if(curr==-1){
             fprintf(stderr,"Error while waiting for terminated children!\n");
             exit(1);
         }
+        i++;
     }
     fprintf(stdout, "All children exited, terminating as well\n");
+    exit(0);
 
 }
 
@@ -131,8 +131,8 @@ int main(int argc, char* argv[]){
         fprintf(stderr,"Failed to allocate memory for children array!\n");
         exit(1);
     }
-    struct sigaction usr1_action,usr2_action,sigterm_action,sigchld_action;
-    sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_chld;
+    struct sigaction usr1_action,usr2_action,sigterm_action;
+    sigset_t sigset_usr1, sigset_usr2, sigset_term;
     /* Set up the structure to specify the new action. */
     
     //SIGUSR1
@@ -190,9 +190,9 @@ int main(int argc, char* argv[]){
             fprintf(stderr, "Error while waiting!\n");
             exit(1);
         }
-        printf("Child with pid=%d terminated\n",wait_pid);
         //child terminated normally so parent needs to resurrect it
         if(WIFEXITED(status) || WIFSIGNALED(status)){
+            fprintf(stdout,"[PARENT/PID=%d] Child with PID=%d terminated successfully with exit status code 0!\n",getpid(),wait_pid);
             //find index of child terminated
             int id = search_index(children, wait_pid);
             if(!id){
@@ -201,9 +201,11 @@ int main(int argc, char* argv[]){
             }
             pid_t newchild = fork();
             children[id] = newchild;
+            fprintf(stdout,"[PARENT/PID=%d] Created new child for gate %d (PID %d) and initial state '%c\n' ", getpid(),id,newchild,str_state[id]);
             child_code(id,newchild);
         }
         if(WIFSTOPPED(status)){
+            fprintf(stdout,"Continuing child with pid=%d\n",wait_pid);
             kill(wait_pid,SIGCONT);
         }
     }
