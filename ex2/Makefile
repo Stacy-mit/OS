@@ -1,14 +1,16 @@
 CC = gcc
 CFLAGS = Wall
 
-all: parent.o child.o
-	$(CC) -$(CFLAGS) parent.o child.o -o all
+CFILES = parent.c child.c
+objects = parent child
 
-parent.o: parent.c
-	$(CC) -$(CFLAGS) -c parent.c
+all: $(objects)
 
-child.o: child.c
-	$(CC) -$(CFLAGS) -c child.c
+parent : parent.c
+	$(CC) -$(CFLAGS) $^ -o $@
+
+child : child.c
+	$(CC) -$(CFLAGS) $^ -o $@
 
 clean:
-	rm *.o all
+	rm -f $(objects)

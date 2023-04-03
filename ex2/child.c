@@ -53,7 +53,10 @@ void usr2_handler (int signum){
     if (state == 0 || state == 1) {
         fprintf(stdout, "Child with pid: %d, state: %d, %d seconds\n",getpid(),state, total_sec);
     }
-    else fprintf(stderr, "Error! Not valid gate state!\n");
+    else {
+        fprintf(stderr, "Error! Not valid gate state!\n");
+        exit(1);
+        };
 }
 
 int main(int argc, char* argv[]){
@@ -64,13 +67,12 @@ int main(int argc, char* argv[]){
     else if(str_state=='f')
         state=1;
     //SIGUSR1
-    struct sigaction usr1_action,usr2_action,sigterm_action, alarm_action;
-    sigset_t sigset_usr1, sigset_usr2, sigset_term, sigset_alarm;
+    struct sigaction usr1_action,usr2_action, alarm_action;
+    sigset_t sigset_usr1, sigset_usr2, sigset_alarm;
     /* Set up the structure to specify the new action. */
     usr1_action.sa_handler = usr1_handler;
     sigemptyset(&sigset_usr1);
     sigaddset(&sigset_usr1, SIGUSR2);
-    sigaddset(&sigset_usr1, SIGTERM);
     sigaddset(&sigset_usr1, SIGALRM);
     /*If you use sigaction to establish a signal handler, you can specify how that handler should behave.
      If you specify the SA_RESTART flag, return from that handler will resume a primitive;
@@ -79,15 +81,15 @@ int main(int argc, char* argv[]){
     usr2_action.sa_handler = usr2_handler;
     sigemptyset(&sigset_usr2);
     sigaddset(&sigset_usr2, SIGUSR1);
-    sigaddset(&sigset_usr2, SIGTERM);
     sigaddset(&sigset_usr2, SIGALRM);
+    usr2_action.sa_flags = SA_RESTART;
+
     //set up the alarm via sigaction
     alarm_action.sa_handler=alarm_handler;
     alarm_action.sa_flags=0; //no special flags are set for the alarm
     sigemptyset(&sigset_alarm);
     sigaddset(&sigset_alarm, SIGUSR1);
-    sigaddset(&sigset_alarm, SIGUSR2);
-    sigaddset(&sigset_alarm, SIGTERM); 
+    sigaddset(&sigset_alarm, SIGUSR2); 
 
     if (0 != sigaction(SIGALRM, &alarm_action, NULL)){
         perror("sigaction () failed installing SIGALRM handler");
@@ -99,10 +101,6 @@ int main(int argc, char* argv[]){
     }
     if (0 != sigaction(SIGUSR2, &usr2_action, NULL)){
         perror("sigaction () failed installing SIGUSR2 handler");
-        exit(1);
-    }
-    if (0 != sigaction(SIGTERM, &sigterm_action, NULL)){
-        perror("sigaction () failed installing SIGTERM handler");
         exit(1);
     }
     kill(getpid(),SIGALRM);

@@ -151,6 +151,7 @@ int main(int argc, char* argv[]){
     sigaddset(&sigset_usr2, SIGUSR1);
     sigaddset(&sigset_usr2, SIGTERM);
     usr2_action.sa_mask = sigset_usr2;
+    usr2_action.sa_flags = SA_RESTART;
     //SIGTERM
     sigterm_action.sa_handler = sigterm_handler;
     sigemptyset(&sigset_term);
@@ -172,7 +173,6 @@ int main(int argc, char* argv[]){
     }
     
 
-    int curr_pid;
     for(int i=0;i<len;i++){
         children[i]=fork();
         child_code(i,children[i]);
@@ -187,6 +187,7 @@ int main(int argc, char* argv[]){
     while(1){
         wait_pid = waitpid(-1,&status,WUNTRACED);
         if(wait_pid<=0){
+            printf("%d\n",waitpid);
             fprintf(stderr, "Error while waiting!\n");
             exit(1);
         }
