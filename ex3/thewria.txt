@@ -1,0 +1,14 @@
+select() allows a program to monitor multiple file descriptors,
+       waiting until one or more of the file descriptors become "ready"
+       for some class of I/O operation (e.g., input possible).  A file
+       descriptor is considered ready if it is possible to perform a
+       corresponding I/O operation (e.g., read(2), or a sufficiently
+       small write(2)) without blocking.
+
+   File descriptor sets
+       The principal arguments of select() are three "sets" of file
+       descriptors (declared with the type fd_set), which allow the
+       caller to wait for three classes of events on the specified set
+       of file descriptors.  Each of the fd_set arguments may be
+       specified as NULL if no file descriptors are to be watched for
+       the corresponding class of events.
