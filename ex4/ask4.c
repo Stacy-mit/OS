@@ -59,11 +59,27 @@ int main(int argc, char *argv[]){
     int domain = AF_INET;
     int type = SOCK_STREAM;
 
-    int sock_fd = socket(domain, type, 0);
+    int cl_socket = socket(domain, type, 0);
 
-    if (sock_fd < 0){
-        perror("Error while creating socket");
-        return 1;
+    if (cl_socket < 0){
+        perror("Error while creating client socket");
+        exit (1);
     }
 
-}
+    //defining the socket-port bind for the client
+    struct sockaddr_in sin;
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(0); /* Let the system choose */
+    sin.sin_addr.s_addr = htonl(INADDR_ANY); /*socket's IP address is the the address of the 
+    system in use and is the address that the one in which the socket makes the connections*/
+
+    int cl_bind = bind(cl_socket, &sin, sizeof(sin));
+
+    if (cl_bind < 0 ){
+        perror("Error while binding client socket")
+        exit (1);
+    }
+
+
+
+}   
