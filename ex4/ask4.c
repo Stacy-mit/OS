@@ -26,7 +26,6 @@ int main(int argc, char *argv[]){
     }
 
     if(argc>=1){
-
         for(int i=1; i<argc;i++){
           if(!strcmp(argv[i], "--host")){
             char host[50] = argv[i+1];
@@ -63,7 +62,7 @@ int main(int argc, char *argv[]){
 
     if (cl_socket < 0){
         perror("Error while creating client socket");
-        exit (1);
+        exit(1);
     }
 
     //defining the socket-port bind for the client
@@ -77,9 +76,11 @@ int main(int argc, char *argv[]){
 
     if (cl_bind < 0 ){
         perror("Error while binding client socket")
-        exit (1);
+        exit(1);
     }
 
 
+    close(cl_socket);
 
+    return 0;
 }   
