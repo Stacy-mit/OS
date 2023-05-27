@@ -10,12 +10,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-int socket(int domain, int type, int protocol);
 
-//setting the default host, port and a char debug parameter to check if debug is chosen
-char host[50]="iot.dslab.pub.ds.open-cloud.xyz"
-char port[10] = "18080";
-char debug = N;
+//setting the default host, port and bool parameters to check if hpst, port and debug are chosen
+char def_host[50]="iot.dslab.pub.ds.open-cloud.xyz"
+bool check_host = false;
+char def_port[10] = "18080";
+bool check_port = false;
+bool debug = false;
 
 int main(int argc, char *argv[]){
 
@@ -25,18 +26,33 @@ int main(int argc, char *argv[]){
     }
 
     if(argc>=1){
+
         for(int i=1; i<argc;i++){
           if(!strcmp(argv[i], "--host")){
-            host = argv[i+1];
+            char host[50] = argv[i+1];
+            check_host = true;
           }
-          if(!strcmp(argv[i], "--port")){
-            port = argv[i+1];
+          else if(!strcmp(argv[i], "--port")){
+            char port[10] = argv[i+1];
+            check_port = true;
           }
-          if(!strcmp(argv[i], "--debug")){
-            debug = Y;
+          else if(!strcmp(argv[i], "--debug")){
+            debug = true;
           }  
-        }
+          else{
+            fprintf(stdout, "Usage: ./a.out [--host HOST] [--port PORT] [--debug]")
+            exit(1);
+          }
+        } 
+    }
 
+    //checking if host and port have been defined. if not they are given the default options
+    if (check_host == false) {
+        char host[50] = def_host;
+    }
+
+    if (check_port == false) {
+        char port[10] = def_port;
     }
 
     //define socket
